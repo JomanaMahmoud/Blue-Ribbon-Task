@@ -1,47 +1,54 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+// src/subscriptions/subscriptions.service.ts
+
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { MembersService } from '../members/members.service';
-import { SportsService } from '../sports/sports.service';
-import { CreateSubscriptionDto } from './dto/create-subscriptions.dto';
 import { Subscription } from './subscription.entity';
+import { CreateSubscriptionDto } from './dto/create-subscriptions.dto';
+import { MembersService } from '../members/members.service'; // We need this to find members
+import { SportsService } from '../sports/sports.service';   // We need this to find sports
 
 @Injectable()
 export class SubscriptionsService {
   constructor(
     @InjectRepository(Subscription)
-    private readonly subscriptionsRepository: Repository<Subscription>,
-    // Inject other services to verify entities exist
+    private readonly subscriptionRepository: Repository<Subscription>,
+    // Inject the other services so we can use them
     private readonly membersService: MembersService,
     private readonly sportsService: SportsService,
   ) {}
 
   async create(createSubscriptionDto: CreateSubscriptionDto): Promise<Subscription> {
-    // Verify that the member and sport actually exist before creating subscription
-    await this.membersService.findOne(createSubscriptionDto.member_id);
-    await this.sportsService.findOne(createSubscriptionDto.sport_id);
+    const { memberId, sportId, type } = createSubscriptionDto;
 
-    const subscription = this.subscriptionsRepository.create(createSubscriptionDto);
+    // 1. Find the actual member and sport entities.
+    // If either doesn't exist, the findOne method will throw a NotFoundException,
+    // which is exactly what we want.
+    const member = await this.membersService.findOne(memberId);
+    const sport = await this.sportsService.findOne(sportId);
 
+    // 2. Create a new subscription entity instance.
+    const newSubscription = this.subscriptionRepository.create({
+      type,
+      member, // Assign the full member object
+      sport,  // Assign the full sport object
+    });
+
+    // 3. Save the new subscription. TypeORM will handle setting the foreign keys.
+    // If the subscription already exists, the @Unique constraint in the entity will cause a DB error.
     try {
-      // This will attempt to save the subscription to the database.
-      return await this.subscriptionsRepository.save(subscription);
+      return await this.subscriptionRepository.save(newSubscription);
     } catch (error) {
-      // This handles the BONUS requirement for endpoint #9.
-      // If the database throws a "unique_violation" error,
-      // it means the (member_id, sport_id) pair already exists.
-      if (error.code === '23505') {
-        throw new ConflictException('This member is already subscribed to this sport.');
+      // Catch potential unique constraint violation error from the database
+      if (error.code === '23505') { // 23505 is the PostgreSQL code for unique_violation
+        throw new NotFoundException('This member is already subscribed to this sport.');
       }
-      // If it's a different error, we let it bubble up.
-      throw error;
+      throw error; // Re-throw any other errors
     }
   }
 
   async remove(id: number): Promise<{ deleted: boolean; id: number }> {
-    // This is for endpoint #10: "Unsubscribe a member from a sport"
-    // The simplest implementation is to delete the subscription record directly.
-    const result = await this.subscriptionsRepository.delete(id);
+    const result = await this.subscriptionRepository.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Subscription with ID #${id} not found`);
     }
