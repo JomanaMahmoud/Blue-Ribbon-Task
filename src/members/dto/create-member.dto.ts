@@ -1,25 +1,38 @@
-import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+// src/members/dto/create-member.dto.ts
+
+import {
+  IsDateString,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { GenderEnum } from '../member.entity';
 
 export class CreateMemberDto {
   @IsString()
   @IsNotEmpty()
-  first_name: string;
+  firstName: string;
 
   @IsString()
   @IsNotEmpty()
-  last_name: string;
+  lastName: string;
 
-  @IsEnum(GenderEnum)
+  @IsEnum(GenderEnum, { message: 'Gender must be either male or female' })
+  @IsNotEmpty()
   gender: GenderEnum;
 
-  @IsDateString() // Validates 'YYYY-MM-DD' format
+  @IsDateString({}, { message: 'Birthdate must be a valid date string (e.g., YYYY-MM-DD)' })
+  @IsNotEmpty()
   birthdate: string;
 
-  @IsDateString()
-  subscription_date: string;
+  @IsDateString({}, { message: 'Subscription date must be a valid ISO 8601 date string' })
+  @IsNotEmpty()
+  subscriptionDate: string;
 
-  @IsInt()
-  @IsOptional() // A member does not have to be linked to a family
-  central_member_id?: number;
+  // To link a new member to an existing central member upon creation
+  @IsNumber()
+  @IsOptional()
+  centralMemberId?: number;
 }

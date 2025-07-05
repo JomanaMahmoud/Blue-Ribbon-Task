@@ -1,5 +1,15 @@
+// src/members/entities/member.entity.ts
+
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+// IMPORTANT: You must import the Subscription entity to reference it.
 import { Subscription } from '../subscriptions/subscription.entity';
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 export enum GenderEnum {
   MALE = 'male',
@@ -11,39 +21,35 @@ export class Member {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  first_name: string;
+  @Column({ name: 'first_name' })
+  firstName: string;
 
-  @Column()
-  last_name: string;
+  @Column({ name: 'last_name' })
+  lastName: string;
 
-  @Column({
-    type: 'enum',
-    enum: GenderEnum,
-  })
+  @Column({ type: 'enum', enum: GenderEnum })
   gender: GenderEnum;
 
-  @Column({ type: 'date' }) // Stores as 'YYYY-MM-DD'
+  @Column({ type: 'date' })
   birthdate: string;
 
-  @Column()
-  subscription_date: Date;
+  @Column({ name: 'subscription_date', type: 'timestamptz' })
+  subscriptionDate: Date;
 
   // --- Relationships ---
 
-  // The ID of the central member this member is linked to.
-  @Column({ nullable: true })
-  central_member_id: number;
+  @ManyToOne(() => Member, (member) => member.familyMembers, {
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
+  @JoinColumn({ name: 'central_member_id' })
+  centralMember: Member | null;
 
-  // The actual central member object (can be loaded).
-  @ManyToOne(() => Member, (member) => member.family_members, { onDelete: 'SET NULL' })
-  central_member: Member;
+  @OneToMany(() => Member, (member) => member.centralMember)
+  familyMembers: Member[];
 
-  // A list of family members for whom THIS member is the central member.
-  @OneToMany(() => Member, (member) => member.central_member)
-  family_members: Member[];
-
-  // A list of all subscriptions this member has.
+  // THIS IS THE FIX. Add this property.
+  // It defines the "one" side of the "one-to-many" relationship with Subscription.
   @OneToMany(() => Subscription, (subscription) => subscription.member)
   subscriptions: Subscription[];
 }

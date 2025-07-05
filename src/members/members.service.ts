@@ -1,9 +1,11 @@
+// src/members/members.service.ts
+
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Member } from './member.entity';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
-import { Member } from './member.entity';
 
 @Injectable()
 export class MembersService {
@@ -12,21 +14,31 @@ export class MembersService {
     private readonly membersRepository: Repository<Member>,
   ) {}
 
-  create(createMemberDto: CreateMemberDto): Promise<Member> {
-    const member = this.membersRepository.create(createMemberDto);
+  async create(createMemberDto: CreateMemberDto): Promise<Member> {
+    const { centralMemberId, ...memberData } = createMemberDto;
+    
+    const member = this.membersRepository.create(memberData);
+
+    if (centralMemberId) {
+      const centralMember = await this.findOne(centralMemberId); // This validates the central member exists
+      member.centralMember = centralMember;
+    }
+
     return this.membersRepository.save(member);
   }
 
-  findAll(): Promise<Member[]> {
-    return this.membersRepository.find();
+  async findAll(): Promise<Member[]> {
+    return this.membersRepository.find({ relations: { centralMember: true } });
   }
 
   async findOne(id: number): Promise<Member> {
-    // This is for endpoint #6: "Get a member's details"
-    // We load all relevant relations to provide full details.
+    // The task requires getting a member's details, which implies fetching relations.
     const member = await this.membersRepository.findOne({
       where: { id },
-      relations: ['subscriptions', 'subscriptions.sport', 'family_members', 'central_member'],
+      relations: {
+        centralMember: true,
+        familyMembers: true,
+      },
     });
 
     if (!member) {
@@ -36,14 +48,23 @@ export class MembersService {
   }
 
   async update(id: number, updateMemberDto: UpdateMemberDto): Promise<Member> {
-    // Preload finds the member and merges the new data onto it.
+    const { centralMemberId, ...memberData } = updateMemberDto;
+    
+    // Preload finds the entity and merges the new data into it.
     const member = await this.membersRepository.preload({
-      id,
-      ...updateMemberDto,
+      id: id,
+      ...memberData,
     });
+
     if (!member) {
       throw new NotFoundException(`Member with ID #${id} not found`);
     }
+    
+    // This logic allows changing or un-linking a central member.
+    if (updateMemberDto.hasOwnProperty('centralMemberId')) {
+        member.centralMember = centralMemberId ? await this.findOne(centralMemberId) : null;
+    }
+
     return this.membersRepository.save(member);
   }
 
