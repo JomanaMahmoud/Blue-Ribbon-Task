@@ -1,4 +1,3 @@
-// src/members/entities/member.entity.ts
 
 import {
   Column,
@@ -8,7 +7,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-// IMPORTANT: You must import the Subscription entity to reference it.
+
 import { Subscription } from '../subscriptions/subscription.entity';
 
 export enum GenderEnum {

@@ -9,7 +9,6 @@ import {
 import { Member } from '../members/member.entity';
 import { Sport } from '../sports/sport.entity';
 
-// Enum for the subscription type, as per your schema
 export enum SubscriptionTypeEnum {
   GROUP = 'group',
   PRIVATE = 'private',
@@ -26,7 +25,7 @@ export class Subscription {
   @Column({
     type: 'enum',
     enum: SubscriptionTypeEnum,
-    name: 'type', // Explicitly matches the 'type' column from your SQL
+    name: 'type', 
   })
   type: SubscriptionTypeEnum;
 
