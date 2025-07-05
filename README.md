@@ -1,98 +1,200 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+# Blue Ribbon - Sporting Club API
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+This repository contains the backend application for the Blue Ribbon Development Internship Task. It is a robust REST API built with **NestJS** that manages members, sports, and subscriptions for a sporting club, using a **PostgreSQL** database managed by **Supabase**.
 
-## Description
+## ✨ Features
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **CRUD Operations** for Sports, Members, and Subscriptions.
+- **Relational Data Handling:** Manages relationships between members (family links) and between members and sports (subscriptions).
+- **DTO Validation:** Uses `class-validator` to ensure all incoming data is well-formed and valid.
+- **Clean Architecture:** Follows NestJS best practices with modules, controllers, services, and entities.
+- **CamelCase API / Snake_case Database:** Provides a clean, conventional `camelCase` API interface while seamlessly mapping to a `snake_case` database schema via TypeORM.
 
-## Project setup
+---
+
+## 🚀 Project Setup
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/en/) (v18 or later recommended)
+- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- A [Supabase](https://supabase.com/) account for the PostgreSQL database.
+
+### 1. Clone the Repository
 
 ```bash
-$ npm install
+git clone https://github.com/JomanaMahmoud/Blue-Ribbon-Task/
+cd <your-repository-folder>
 ```
 
-## Compile and run the project
+### 2. Install Dependencies
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
+### 3. Set Up Supabase Database
+
+1.  Go to your [Supabase Dashboard](https://app.supabase.com/) and create a new project.
+2.  Navigate to **Project Settings > Database** and find your connection string URI.
+3.  Navigate to the **SQL Editor** in the Supabase dashboard and run the following schema to create the necessary tables and types.
+
+<details>
+<summary>Click to view the SQL Schema</summary>
+
+```sql
+-- Custom ENUM types for data integrity
+CREATE TYPE gender_enum AS ENUM ('male', 'female');
+CREATE TYPE allowed_gender_enum AS ENUM ('male', 'female', 'mix');
+CREATE TYPE subscription_type_enum AS ENUM ('group', 'private');
+
+-- Members Table
+CREATE TABLE members (
+    id SERIAL PRIMARY KEY,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    gender gender_enum NOT NULL,
+    birthdate DATE NOT NULL,
+    subscription_date TIMESTAMPTZ NOT NULL,
+    central_member_id INTEGER REFERENCES members(id) ON DELETE SET NULL
+);
+
+-- Sports Table
+CREATE TABLE sports (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    subscription_price NUMERIC(10, 2) NOT NULL CHECK (subscription_price >= 0),
+    allowed_gender allowed_gender_enum NOT NULL
+);
+
+-- Subscriptions Table (Join Table)
+CREATE TABLE subscriptions (
+    id SERIAL PRIMARY KEY,
+    member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+    sport_id INTEGER NOT NULL REFERENCES sports(id) ON DELETE CASCADE,
+    type subscription_type_enum NOT NULL,
+
+    -- Ensures a member cannot have more than one subscription to the same sport.
+    UNIQUE (member_id, sport_id)
+);
+```
+</details>
+
+### 4. Configure Environment Variables
+
+Create a `.env` file in the root of the project by copying the example file:
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+cp .env.example .env
 ```
 
-## Deployment
+Now, open the `.env` file and fill it with your Supabase database credentials from the connection string.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+```env
+# .env file
+DATABASE_HOST=db.<your-project-ref>.supabase.co
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=<your-database-password>
+DATABASE_NAME=postgres
+```
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 5. Run the Application
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# Development mode with hot-reload
+npm run start:dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+The application will be running at `http://localhost:3000`.
 
-## Resources
+---
 
-Check out a few resources that may come in handy when working with NestJS:
+## 📋 API Summary
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+The base URL is `http://localhost:3000`.
 
-## Support
+### Sports (`/sports`)
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+| Method        | Endpoint         | Description                                     |
+|---------------|------------------|-------------------------------------------------|
+| `POST`        | `/sports`        | Creates a new sport.                            |
+| `GET`         | `/sports`        | Gets a list of all available sports.            |
+| `GET`         | `/sports/:id`    | Gets details for a single sport by its ID.      |
+| `PATCH`       | `/sports/:id`    | Updates a sport's details.                      |
+| `DELETE`      | `/sports/:id`    | Deletes a sport.                                |
 
-## Stay in touch
+💡 **Bonus:** The `GET /sports` endpoint is cached for 10 seconds to handle high traffic efficiently.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+**Example: `POST /sports`**
+_Request Body:_
+```json
+{
+  "name": "Archery",
+  "subscriptionPrice": 45.00,
+  "allowedGender": "mix"
+}
+```
 
-## License
+### Members (`/members`)
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+| Method        | Endpoint         | Description                                     |
+|---------------|------------------|-------------------------------------------------|
+| `POST`        | `/members`       | Creates a new member.                           |
+| `GET`         | `/members`       | Gets a list of all members.                     |
+| `GET`         | `/members/:id`   | Gets a member's details, including family links.|
+| `PATCH`       | `/members/:id`   | Updates a member's details.                     |
+| `DELETE`      | `/members/:id`   | Deletes a member.                               |
+
+**Example: `POST /members` (to create a family member)**
+_Request Body:_
+```json
+{
+  "firstName": "Sam",
+  "lastName": "Jones",
+  "gender": "male",
+  "birthdate": "2010-02-10",
+  "subscriptionDate": "2023-10-27T12:00:00Z",
+  "centralMemberId": 1
+}
+```
+
+### Subscriptions (`/subscriptions`)
+
+| Method        | Endpoint            | Description                                  |
+|---------------|---------------------|----------------------------------------------|
+| `POST`        | `/subscriptions`    | Subscribes a member to a sport.              |
+| `DELETE`      | `/subscriptions/:id`| Unsubscribes a member from a sport by subscription ID.|
+
+💡 **Bonus:** The system ensures a member cannot subscribe to the same sport more than once via a database `UNIQUE` constraint.
+
+**Example: `POST /subscriptions`**
+_Request Body:_
+```json
+{
+  "memberId": 1,
+  "sportId": 1,
+  "type": "group"
+}
+```
+
+---
+
+## 📝 Assumptions Made
+
+-   **API Naming Convention:** The API uses `camelCase` for all JSON request and response bodies, as this is the standard for modern web APIs.
+-   **Database Naming Convention:** The database uses `snake_case` for table and column names, as this is a common convention for PostgreSQL. TypeORM is configured to handle this mapping seamlessly.
+-   **Caching Strategy:** For the high-traffic bonus on `GET /sports`, an in-memory cache (`@nestjs/cache-manager`) with a 10-second TTL was implemented. This provides a simple and effective performance boost.
+-   **Uniqueness Constraint:** For the unique subscription bonus, a database-level `UNIQUE` constraint on `(member_id, sport_id)` was implemented. This is the most robust and efficient way to enforce this rule.
+-   **Error Handling:** The API provides clear error messages for `4xx` client errors (e.g., Not Found, Bad Request) and generic messages for `5xx` server errors.
+
+---
+
+## ✅ Running Tests
+
+Unit tests are included for key services. To run them:
+
+```bash
+npm test
+```
