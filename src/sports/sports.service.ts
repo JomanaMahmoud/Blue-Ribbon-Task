@@ -1,7 +1,9 @@
+// src/sports/sports.service.ts
+
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Sport } from './sport.entity';
+import { Sport } from './sport.entity'; // Make sure your path is correct
 import { CreateSportDto } from './dto/create-sport.dto';
 import { UpdateSportDto } from './dto/update-sport.dto';
 
@@ -12,13 +14,16 @@ export class SportsService {
     private readonly sportsRepository: Repository<Sport>,
   ) {}
 
-  create(createSportDto: CreateSportDto): Promise<Sport> {
+  async create(createSportDto: CreateSportDto): Promise<Sport> {
+    // With the DTO fixed, this line now works perfectly.
     const sport = this.sportsRepository.create(createSportDto);
-    return this.sportsRepository.save(sport);
+
+    // FIX: You don't need to spread {...sport}. Just pass the entity object.
+    return await this.sportsRepository.save(sport);
   }
 
-  findAll(): Promise<Sport[]> {
-    return this.sportsRepository.find();
+  async findAll(): Promise<Sport[]> {
+    return await this.sportsRepository.find();
   }
 
   async findOne(id: number): Promise<Sport> {
@@ -30,11 +35,15 @@ export class SportsService {
   }
 
   async update(id: number, updateSportDto: UpdateSportDto): Promise<Sport> {
-    const sport = await this.sportsRepository.preload({ id, ...updateSportDto });
+    // With the DTO fixed, this preload call will now work perfectly.
+    const sport = await this.sportsRepository.preload({
+      id,
+      ...updateSportDto,
+    });
     if (!sport) {
       throw new NotFoundException(`Sport with ID #${id} not found`);
     }
-    return this.sportsRepository.save(sport);
+    return await this.sportsRepository.save(sport);
   }
 
   async remove(id: number): Promise<{ deleted: boolean; id: number }> {

@@ -1,13 +1,19 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsPositive, IsString, MinLength } from 'class-validator';
+// src/sports/dto/create-sport.dto.ts
+
+import { IsEnum, IsNotEmpty, IsNumber, IsPositive, IsString } from 'class-validator';
+// IMPORTANT: Import the enum from your entity file
 import { AllowedGenderEnum } from '../sport.entity';
 
 export class CreateSportDto {
-  @IsString() @IsNotEmpty() @MinLength(3)
+  @IsString()
+  @IsNotEmpty()
   name: string;
 
-  @IsNumber() @IsPositive()
-  subscription_price: number;
+  @IsNumber()
+  @IsPositive()
+  subscriptionPrice: number;
 
-  @IsEnum(AllowedGenderEnum) @IsNotEmpty()
-  allowed_gender: AllowedGenderEnum;
+  @IsEnum(AllowedGenderEnum) // Use the enum here for validation
+  @IsNotEmpty()
+  allowedGender: AllowedGenderEnum; // And use the enum here for the type
 }

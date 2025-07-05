@@ -13,7 +13,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      url: 'postgresql://postgres:rmahbR2hhMBoafym@db.ftlicwygiqvptdktuomf.supabase.co:5432/postgres',
+      url: 'postgresql://postgres.ftlicwygiqvptdktuomf:rmahbR2hhMBoafym@aws-0-eu-central-1.pooler.supabase.com:5432/postgres',
       autoLoadEntities: true, 
       synchronize: false, // We created the tables manually
       ssl: {
