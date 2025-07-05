@@ -191,10 +191,4 @@ _Request Body:_
 
 ---
 
-## ✅ Running Tests
 
-Unit tests are included for key services. To run them:
-
-```bash
-npm test
-```
